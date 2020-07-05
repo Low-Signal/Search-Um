@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "357203880627",
+    "firebase_url": "https://search-um.firebaseio.com",
+    "project_id": "search-um",
+    "storage_bucket": "search-um.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:357203880627:android:9a90bd82a51667949a1ec6",
+        "android_client_info": {
+          "package_name": "com.mobile.searchum"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "357203880627-ctrc2tc802m3upc9ce47ngoao26ijt91.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCj_trUHU_s6qio1q0x_mPeYaNgSIYEY4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "357203880627-ctrc2tc802m3upc9ce47ngoao26ijt91.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
