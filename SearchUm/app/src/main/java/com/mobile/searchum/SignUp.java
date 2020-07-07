@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -15,10 +16,14 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
 
 public class SignUp extends AppCompatActivity {
 
-    private EditText emailEditText, passEditText, confirmPassEditText;
+    private String TAG = SignUp.class.getSimpleName();
+
+    private EditText displayNameEditText, emailEditText, passEditText, confirmPassEditText;
     private Button createAccountButton;
     private TextView toSignInTextView;
     private FirebaseAuth mFirebaseAuth;
@@ -27,11 +32,18 @@ public class SignUp extends AppCompatActivity {
     private final View.OnClickListener createAccountListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            String email = emailEditText.getText().toString();
-            String password = passEditText.getText().toString();
-            String confirmPass = confirmPassEditText.getText().toString();
+            String displayName = displayNameEditText.getText().toString().trim();
+            String email = emailEditText.getText().toString().trim();
+            String password = passEditText.getText().toString().trim();
+            String confirmPass = confirmPassEditText.getText().toString().trim();
+
             Boolean error = false;
 
+            if(displayName.isEmpty()){
+                displayNameEditText.setError("Please enter an display name");
+                displayNameEditText.requestFocus();
+                error = true;
+            }
             if(email.isEmpty()){
                 emailEditText.setError("Please enter an email address.");
                 emailEditText.requestFocus();
@@ -63,6 +75,7 @@ public class SignUp extends AppCompatActivity {
                             Toast.makeText(SignUp.this, "Sign up failed, please try again.", Toast.LENGTH_SHORT).show();
                         }
                         else{
+                            userProfile();
                             startActivity(new Intent(SignUp.this, HomeScreen.class));
                         }
                     }
@@ -79,12 +92,31 @@ public class SignUp extends AppCompatActivity {
         }
     };
 
+    private void userProfile(){
+        FirebaseUser user = mFirebaseAuth.getCurrentUser();
+        if(user != null) {
+            UserProfileChangeRequest profileUpdate = new UserProfileChangeRequest.Builder()
+                    .setDisplayName(displayNameEditText.getText().toString().trim()).build();
+
+            user.updateProfile(profileUpdate).addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    if(task.isSuccessful()) {
+                        Log.d("TAG", "Display name update successful");
+                    }
+                }
+            });
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up);
 
         mFirebaseAuth = FirebaseAuth.getInstance();
+
+        displayNameEditText = findViewById(R.id.displayNameEditText);
         emailEditText = findViewById(R.id.emailEditText);
         passEditText = findViewById(R.id.passwordEditText);
         confirmPassEditText = findViewById(R.id.confirmPassEditText);
@@ -93,15 +125,18 @@ public class SignUp extends AppCompatActivity {
 
         createAccountButton.setOnClickListener(createAccountListener);
         toSignInTextView.setOnClickListener(toSignInListener);
+
     }
 
     @Override
     protected void onPause(){
         super.onPause();
+        displayNameEditText.setError(null);
         emailEditText.setError(null);
         passEditText.setError(null);
         confirmPassEditText.setError(null);
 
+        displayNameEditText.clearFocus();
         emailEditText.clearFocus();
         passEditText.clearFocus();
         confirmPassEditText.clearFocus();
