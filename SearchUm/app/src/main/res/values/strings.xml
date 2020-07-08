@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Search Um</string>
+    <string-array name="score_string">
+        <item>1Name=1</item>
+        <item>2Name=2</item>
+        <item>3tName=3</item>
+        <item>4Name=4</item>
+        <item>5Name=5</item>
+    </string-array>
 </resources>

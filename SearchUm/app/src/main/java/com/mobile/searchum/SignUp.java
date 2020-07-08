@@ -18,6 +18,12 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
 
 public class SignUp extends AppCompatActivity {
 
@@ -26,58 +32,79 @@ public class SignUp extends AppCompatActivity {
     private EditText displayNameEditText, emailEditText, passEditText, confirmPassEditText;
     private Button createAccountButton;
     private TextView toSignInTextView;
+
     private FirebaseAuth mFirebaseAuth;
+    private FirebaseDatabase database;
+    private DatabaseReference mDatabase;
 
     // Creates account and goes to the home screen.
     private final View.OnClickListener createAccountListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            String displayName = displayNameEditText.getText().toString().trim();
-            String email = emailEditText.getText().toString().trim();
-            String password = passEditText.getText().toString().trim();
+            final String displayName = displayNameEditText.getText().toString().trim();
+            final String email = emailEditText.getText().toString().trim();
+            final String password = passEditText.getText().toString().trim();
             String confirmPass = confirmPassEditText.getText().toString().trim();
 
             Boolean error = false;
 
-            if(displayName.isEmpty()){
+            if (displayName.isEmpty()) {
                 displayNameEditText.setError("Please enter an display name");
                 displayNameEditText.requestFocus();
                 error = true;
             }
-            if(email.isEmpty()){
+            if (email.isEmpty()) {
                 emailEditText.setError("Please enter an email address.");
                 emailEditText.requestFocus();
                 error = true;
             }
-            if(password.isEmpty()){
+            if (password.isEmpty()) {
                 passEditText.setError("Must enter a password.");
                 passEditText.requestFocus();
                 error = true;
             }
-            if(confirmPass.isEmpty()){
+            if (confirmPass.isEmpty()) {
                 confirmPassEditText.setError("Must enter a password.");
                 confirmPassEditText.requestFocus();
                 error = true;
             }
-            if(!password.equals(confirmPass)){
+            if (!password.equals(confirmPass)) {
                 passEditText.setError("Passwords must be the same.");
                 passEditText.requestFocus();
                 confirmPassEditText.requestFocus();
                 error = true;
             }
 
-            // If there were no errors attempt to create account.
-            if(!error){
-                mFirebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(SignUp.this, new OnCompleteListener<AuthResult>() {
+            // Query to check if the username already exist.
+            Query usernameQuery = FirebaseDatabase.getInstance().getReference().child("Users").orderByValue().equalTo(displayName);
+            if (!error) {
+                usernameQuery.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if(!task.isSuccessful()){
-                            Toast.makeText(SignUp.this, "Sign up failed, please try again.", Toast.LENGTH_SHORT).show();
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        // If there is more than one username that is the same in the database.
+                        if (snapshot.getChildrenCount() > 0) {
+                            displayNameEditText.setError("Username already exist.");
+                            displayNameEditText.requestFocus();
+                        } else {
+                            // Creates the user and adds the username to the database.
+                            mFirebaseAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(SignUp.this, new OnCompleteListener<AuthResult>() {
+                                @Override
+                                public void onComplete(@NonNull Task<AuthResult> task) {
+                                    if (!task.isSuccessful()) {
+                                        Toast.makeText(SignUp.this, "Sign up failed, please try again.", Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        String keyId = mDatabase.push().getKey();
+                                        mDatabase.child(keyId).setValue(displayName);
+                                        userProfile();
+                                        startActivity(new Intent(SignUp.this, HomeScreen.class));
+                                    }
+                                }
+                            });
                         }
-                        else{
-                            userProfile();
-                            startActivity(new Intent(SignUp.this, HomeScreen.class));
-                        }
+                    }
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
                     }
                 });
             }
@@ -115,6 +142,8 @@ public class SignUp extends AppCompatActivity {
         setContentView(R.layout.activity_sign_up);
 
         mFirebaseAuth = FirebaseAuth.getInstance();
+        database = FirebaseDatabase.getInstance();
+        mDatabase = database.getReference("Users");
 
         displayNameEditText = findViewById(R.id.displayNameEditText);
         emailEditText = findViewById(R.id.emailEditText);
