@@ -1,5 +1,6 @@
 package com.mobile.searchum;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
@@ -9,6 +10,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthCredential;
+import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -22,14 +27,51 @@ public class ChangePassword extends AppCompatActivity {
     private final View.OnClickListener changePassListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            String currentPass, newPass, confirmPass;
-            FirebaseUser user = mFirebaseAuth.getCurrentUser();
+            final String currentPass, newPass, confirmPass;
+            final FirebaseUser user = mFirebaseAuth.getCurrentUser();
 
-            currentPass = currentPassEditText.getText().toString();
-            newPass = newPassEditText.getText().toString();
-            confirmPass = confirmPassEditText.getText().toString();
+            currentPass = currentPassEditText.getText().toString().trim();
+            newPass = newPassEditText.getText().toString().trim();
+            confirmPass = confirmPassEditText.getText().toString().trim();
 
-            Toast.makeText(ChangePassword.this, "Test", Toast.LENGTH_SHORT).show();
+            if(newPass.isEmpty() || confirmPass.isEmpty()){
+                newPassEditText.setError("Must enter a password.");
+                confirmPassEditText.setError("Must enter a password.");
+                newPassEditText.requestFocus();
+            }
+            else if(!newPass.equals(confirmPass)){
+                newPassEditText.setError("Passwords must match.");
+                confirmPassEditText.setError("Passwords must match.");
+                newPassEditText.requestFocus();
+            }
+            else{
+                AuthCredential credential = EmailAuthProvider.getCredential(user.getEmail(), currentPass);
+
+                user.reauthenticate(credential)
+                        .addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                if (task.isSuccessful()) {
+                                    user.updatePassword(confirmPass).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<Void> task) {
+                                            if (task.isSuccessful()) {
+                                                Toast.makeText(ChangePassword.this, "Password updated", Toast.LENGTH_SHORT).show();
+                                                startActivity(new Intent(ChangePassword.this, MainActivity.class));
+                                            }
+                                            else{
+                                                Toast.makeText(ChangePassword.this, "Password update failed", Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    });
+                                }
+                                else{
+                                    Toast.makeText(ChangePassword.this, "Failed authentication", Toast.LENGTH_SHORT).show();
+                                }
+                            }
+                        });
+            }
+            
         }
     };
 
