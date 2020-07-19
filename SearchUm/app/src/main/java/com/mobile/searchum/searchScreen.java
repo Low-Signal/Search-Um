@@ -1,11 +1,15 @@
 package com.mobile.searchum;
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.fragment.app.Fragment;
 
 import android.view.LayoutInflater;
+import android.view.OrientationEventListener;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.RequiresApi;
@@ -35,6 +39,7 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -59,7 +64,9 @@ import android.widget.Toast;
 import com.google.android.gms.common.util.Strings;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.common.util.concurrent.ListenableFuture;
+
 
 
 import org.tensorflow.lite.Interpreter;
@@ -72,14 +79,32 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.firebase.ml.vision.FirebaseVision;
+import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata;
+import com.google.firebase.ml.vision.label.FirebaseVisionLabel;
+import com.google.firebase.ml.vision.label.FirebaseVisionLabelDetector;
+import com.google.firebase.ml.vision.label.FirebaseVisionLabelDetectorOptions;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.label.ImageLabel;
+import com.google.mlkit.vision.label.ImageLabeler;
+import com.google.mlkit.vision.label.ImageLabeling;
+import com.google.mlkit.vision.label.defaults.ImageLabelerOptions;
 
 public class searchScreen extends AppCompatActivity {
 
     private TextView mTextView;
     private static final String M_PATH = "detect.tflite";
     private static final String L_PATH = "labelmap.txt";
+    private static final String F_PATH = "test";
     private Activity mCurrentActivity = null;
     private String[] Objects = null;
+    FirebaseVisionLabelDetectorOptions options =
+            new FirebaseVisionLabelDetectorOptions.Builder()
+                    .setConfidenceThreshold(0.8f)
+                    .build();
+    private Vector<String> findAble = null;
+    private String current = null;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     int Frame = 0;
     @RequiresApi(api = Build.VERSION_CODES.P)
@@ -93,12 +118,63 @@ public class searchScreen extends AppCompatActivity {
 
         try {
             labels(mCurrentActivity);
+            setFindAble(mCurrentActivity);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
 
 
         startCamera();
+        startGame();
+    }
+
+    private void startGame(){
+
+        Log.d("game","started");
+        chooseObject();
+    }
+
+
+
+    private void chooseObject()
+    {
+        if(findAble.size() != 0) {
+           // Log.d("choice", String.valueOf(findAble.size()));
+            Random r = new Random();
+            int choice = r.nextInt(findAble.size());
+            current = findAble.get(choice);
+            Log.d("choice",current);
+            findAble.remove(choice);
+            TextView c = (TextView) findViewById(R.id.current);
+            c.setText(current);
+        }
+    }
+
+    // reads optiosn from file
+    private void setFindAble(Activity activity) throws IOException{
+        if(findAble != null)
+        {
+            return;
+        }
+        findAble = new Vector<String>();
+        InputStream file = activity.getAssets().open(F_PATH);
+        //FileInputStream inStream = new FileInputStream(fileD.getFileDescriptor());
+        BufferedReader r = new BufferedReader(new InputStreamReader(file));
+        String temp = r.readLine();
+
+        //arrray position
+        int i = 0;
+        while(temp != null && i < 90)
+        {
+            Log.d("findable",temp);
+            findAble.add(temp);
+
+            i++;
+            temp = r.readLine();
+        }
+
+
     }
 
     // reads in from label file
@@ -132,22 +208,6 @@ public class searchScreen extends AppCompatActivity {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private ByteBuffer loadModelFile(Activity activity) throws IOException
     {
         AssetFileDescriptor fileD = activity.getAssets().openFd(M_PATH);
@@ -167,6 +227,7 @@ public class searchScreen extends AppCompatActivity {
         //https://developer.android.com/training/camerax/preview
 
         cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+
 
         // need to change language compat to 1.8 java to use the arrow function
         cameraProviderFuture.addListener(() -> {
@@ -196,16 +257,36 @@ public class searchScreen extends AppCompatActivity {
         preview.setSurfaceProvider(previewView.createSurfaceProvider());
         ImageAnalysis imageAnalysis =
                 new ImageAnalysis.Builder()
-                        .setTargetResolution(new Size(1280, 720))
+                        .setTargetResolution(new Size(1280, 960))
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
+        /*
+        OrientationEventListener orientationEventListener = new OrientationEventListener((Context)this) {
+            @Override
+            public void onOrientationChanged(int orientation) {
+                int rotation;
+                // Monitors orientation values to determine the target rotation value
+                if (orientation >= 45 && orientation < 135) {
+                    rotation = Surface.ROTATION_270;
+                } else if (orientation >= 135 && orientation < 225) {
+                    rotation = Surface.ROTATION_180;
+                } else if (orientation >= 225 && orientation < 315) {
+                    rotation = Surface.ROTATION_90;
+                } else {
+                    rotation = Surface.ROTATION_0;
+                }
 
+                imageAnalysis.setTargetRotation(rotation);
+            }
+        };
 
-
+        orientationEventListener.enable();
+*/
         imageAnalysis.setAnalyzer(getMainExecutor(),new ImageAnalysis.Analyzer() {
             @Override
             public void analyze(ImageProxy image) {
                 int rotationDegrees = image.getImageInfo().getRotationDegrees();
+
                 //image format is 35 or YUV_420_888
                 Toast.makeText(getApplicationContext(), "analyze", Toast.LENGTH_LONG);
                 Log.d("ANAL","in anal");
@@ -218,7 +299,87 @@ public class searchScreen extends AppCompatActivity {
                     // image to butmatp insprried by https://heartbeat.fritz.ai/image-classification-on-android-with-tensorflow-lite-and-camerax-4f72e8fdca79
                     // https://stackoverflow.com/questions/56772967/converting-imageproxy-to-bitmap
                     // helped
-                    ImageProxy.PlaneProxy y = image.getPlanes()[0];
+
+
+
+
+
+                    @SuppressLint("UnsafeExperimentalUsageError")
+                    Image inputImage =image.getImage();
+                    if (inputImage != null) {
+                        FirebaseVisionImage inIm = FirebaseVisionImage.fromMediaImage(inputImage, FirebaseVisionImageMetadata.ROTATION_0);//image.getImageInfo().getRotationDegrees());
+                        FirebaseVisionLabelDetector detector = FirebaseVision.getInstance()
+                                .getVisionLabelDetector();
+
+                        Task<List<FirebaseVisionLabel>> result =
+                                detector.detectInImage(inIm)
+                                        .addOnSuccessListener(
+                                                new OnSuccessListener<List<FirebaseVisionLabel>>() {
+                                                    @Override
+                                                    public void onSuccess(List<FirebaseVisionLabel> labels) {
+                                                        // Task completed successfull
+                                                        if(!labels.isEmpty()) {
+                                                            for (FirebaseVisionLabel label : labels) {
+                                                                String text = label.getLabel();
+                                                                Log.d("Pass", text);
+                                                                String entityId = label.getEntityId();
+                                                                float confidence = label.getConfidence();
+                                                                Log.d("Pass", String.valueOf(confidence));
+                                                                if(confidence > 0.6) {
+                                                                    TextView c = (TextView) findViewById(R.id.current);
+                                                                    c.setText(text);
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                })
+                                        .addOnFailureListener(
+                                                new OnFailureListener() {
+                                                    @Override
+                                                    public void onFailure(@NonNull Exception e) {
+                                                        // Task failed with an exception
+                                                        Log.d("failure",e.getLocalizedMessage());
+
+                                                        // ...
+                                                    }
+                                                });
+                    }
+
+
+                    /*
+                     @SuppressLint("UnsafeExperimentalUsageError")
+
+                    Image inputImage =image.getImage();
+                    if (inputImage != null) {
+                        InputImage inIm =
+                                InputImage.fromMediaImage(inputImage, image.getImageInfo().getRotationDegrees());
+                        ImageLabeler labeler = ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS);
+                        labeler.process(inIm)
+                                .addOnSuccessListener(new OnSuccessListener<List<ImageLabel>>() {
+                                    @Override
+                                    public void onSuccess(List<ImageLabel> labels) {
+                                        Log.d("Pass", String.valueOf(labels.get(0)));
+
+                                        // Task completed successfully
+                                        // ...
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        Log.d("failure",e.getLocalizedMessage());
+                                        // Task failed with an exception
+                                        // ...
+                                    }
+                                });
+
+
+                    }
+
+
+                    /*
+
+                        ImageProxy.PlaneProxy y = image.getPlanes()[0];
                     ImageProxy.PlaneProxy u = image.getPlanes()[1];
                     ImageProxy.PlaneProxy v = image.getPlanes()[2];
                     int ysize = y.getBuffer().remaining();
@@ -233,16 +394,25 @@ public class searchScreen extends AppCompatActivity {
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
                     yuvImage.compressToJpeg(new Rect(0, 0, yuvImage.getWidth(), yuvImage.getHeight()), 75, out);
                     byte[] iBytes = out.toByteArray();
-                    Bitmap input = Bitmap.createScaledBitmap(BitmapFactory.decodeByteArray(iBytes, 0, iBytes.length), 300, 300, true);
+                    int [] rgbBytes = new int[iBytes.length];
+                    //ImageUtils.convertYUV420ToARGB8888(y.getBuffer().array(),u.getBuffer().array(),v.getBuffer().array(),
+                    //        1280,960,y.getRowStride(),u.getRowStride(),u.getPixelStride(),rgbBytes);
+  //                  Bitmap rgbFrameBitmap = Bitmap.createBitmap(1280, 960, Bitmap.Config.ARGB_8888);
+//                    rgbFrameBitmap.setPixels(rgbBytes, 0, 1280, 0, 0, 1280, 960);
+
+                    Bitmap input = Bitmap.createScaledBitmap(BitmapFactory.decodeByteArray(iBytes, 0, iBytes.length), 300, 300, false);
+                    //Bitmap input = BitmapFactory.decodeByteArray(iBytes, 0, iBytes.length);
                     //1280X960 image dimensions
+                    //Bitmap input = Bitmap.createScaledBitmap(rgbFrameBitmap,300,300,false);
                     int wSize = input.getWidth();
                     int hSize = input.getHeight();
                     int[] intValues = new int[wSize * hSize];
-                    input.getPixels(intValues, 0, input.getWidth(), 0, 0, input.getWidth(), input.getHeight());
-                    Log.d("data", String.valueOf(input.getPixel(20, 30)));
+                    input.getPixels(intValues, 0, input.getWidth(), 0, 0, 300, 300);
+                    Log.d("data", String.valueOf(input.getConfig()));
 
 
                     // for quantised model
+
                     ByteBuffer imgData;
                     imgData = ByteBuffer.allocateDirect(wSize * hSize * 3);
                     //imgData.rewind();
@@ -276,8 +446,8 @@ public class searchScreen extends AppCompatActivity {
                         // Log.d("ic", output.get(3)));
 
                         int numDetectionsOutput = Math.min(10, (int) numDetect[0]);
-                        Log.d("found", String.valueOf(numDetectionsOutput));
-                        Log.d("ic", String.valueOf(outClasses[0][0]));
+                        //Log.d("found", String.valueOf(numDetect[0]));
+                        //Log.d("ic", String.valueOf(outClasses[0][0]));
                         Vector<String> qLessClasses = new Vector();
                         Vector percents = new Vector();
                         for (int i = 0; i < outClasses[0].length; i++) {
@@ -289,7 +459,21 @@ public class searchScreen extends AppCompatActivity {
                         }
 
                         int[] top3 = findTop3(percents);
+                       // if(top3.length == 3) {
+                            for (int i = 0; i < qLessClasses.size(); i++) {
+                               Log.d("hceck loop",qLessClasses.get(i));
+                               Log.d("hceck loop",current);
+
+                                if (qLessClasses.get(i).equals(current)) {
+                                    chooseObject();
+                                    //return;
+                                    break;
+                                }
+                            }
+                        //}
+                        /*
                         if (top3.length == 3) {
+                            /*
                             TextView t1, t1p, t2, t2p, t3, t3p;
                             t1 = (TextView) findViewById(R.id.top1);
                             t1p = (TextView) findViewById(R.id.top1P);
@@ -298,30 +482,33 @@ public class searchScreen extends AppCompatActivity {
                             t3 = (TextView) findViewById(R.id.top3);
                             t3p = (TextView) findViewById(R.id.top3P);
                             t1.setText(qLessClasses.get(top3[0]));
-                            t1p.setText(String.valueOf(percents.get(top3[0])));
+                            t1p.setText(String.valueOf((float) percents.get(top3[0])*10));
 
                             t2.setText(qLessClasses.get(top3[1]));
-                            t2p.setText(String.valueOf(percents.get(top3[1])));
+                            t2p.setText(String.valueOf((float)percents.get(top3[1])*10));
 
                             t3.setText(qLessClasses.get(top3[2]));
-                            t3p.setText(String.valueOf(percents.get(top3[2])));
+                            t3p.setText(String.valueOf((float)percents.get(top3[2])*10));
+
+
+                            for(int i = 0; i < qLessClasses.size();i++)
+                            {
+                               // Log.d("classes",String.valueOf(i)+" :"+qLessClasses.get(i));
+                                //Log.d("classes",String.valueOf(i)+"PErcenets :"+String.valueOf(percents.get(i)));
+                            }
+                            Log.d("classes","end");
+                            Log.d("classes","end");
+                            Log.d("classes","end");
                         }
-                   
                     /*
                     for (int i = 0; i < 3; i ++)
                     {
                         Log.d("top3",qLessClasses.get(i));
                         Log.d("top3","percent: "+percents.get(i));
                     }*/
-                    /*
-                    for(int i = 0; i < outClasses[0].length;i++)
-                    {
-                        Log.d("classes",String.valueOf(i)+" :"+Objects[(int) outClasses[0][i]]);
-                    }
-                    Log.d("classes","end");
-                    Log.d("classes","end");
-                    Log.d("classes","end");
-                    */
+
+
+
 
                     tflite.close();
                 } catch (IOException e) {
