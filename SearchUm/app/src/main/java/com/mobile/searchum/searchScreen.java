@@ -35,6 +35,7 @@ import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
@@ -80,7 +81,7 @@ public class searchScreen extends AppCompatActivity {
     private Activity mCurrentActivity = null;
     private String[] Objects = null;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
-
+    int Frame = 0;
     @RequiresApi(api = Build.VERSION_CODES.P)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -199,6 +200,8 @@ public class searchScreen extends AppCompatActivity {
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
 
+
+
         imageAnalysis.setAnalyzer(getMainExecutor(),new ImageAnalysis.Analyzer() {
             @Override
             public void analyze(ImageProxy image) {
@@ -210,42 +213,42 @@ public class searchScreen extends AppCompatActivity {
                 try {
                     // input 300x300x3
                     Interpreter tflite = new Interpreter(loadModelFile(mCurrentActivity));
-                    Log.d("LOAD","loaded");
+                    Log.d("LOAD", "loaded");
                     Toast.makeText(getApplicationContext(), "hello", Toast.LENGTH_LONG);
                     // image to butmatp insprried by https://heartbeat.fritz.ai/image-classification-on-android-with-tensorflow-lite-and-camerax-4f72e8fdca79
                     // https://stackoverflow.com/questions/56772967/converting-imageproxy-to-bitmap
                     // helped
-                    ImageProxy.PlaneProxy y  = image.getPlanes()[0];
-                    ImageProxy.PlaneProxy u  = image.getPlanes()[1];
-                    ImageProxy.PlaneProxy v  = image.getPlanes()[2];
+                    ImageProxy.PlaneProxy y = image.getPlanes()[0];
+                    ImageProxy.PlaneProxy u = image.getPlanes()[1];
+                    ImageProxy.PlaneProxy v = image.getPlanes()[2];
                     int ysize = y.getBuffer().remaining();
                     int usize = u.getBuffer().remaining();
                     int vsize = v.getBuffer().remaining();
-                    byte [] temp = new byte[ysize+usize+vsize];
-                    y.getBuffer().get(temp,0,ysize);
-                    u.getBuffer().get(temp,ysize,vsize);
-                    v.getBuffer().get(temp,ysize+vsize,usize);
+                    byte[] temp = new byte[ysize + usize + vsize];
+                    y.getBuffer().get(temp, 0, ysize);
+                    u.getBuffer().get(temp, ysize, vsize);
+                    v.getBuffer().get(temp, ysize + vsize, usize);
 
                     YuvImage yuvImage = new YuvImage(temp, ImageFormat.NV21, image.getWidth(), image.getHeight(), null);
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
                     yuvImage.compressToJpeg(new Rect(0, 0, yuvImage.getWidth(), yuvImage.getHeight()), 75, out);
                     byte[] iBytes = out.toByteArray();
-                    Bitmap input = Bitmap.createScaledBitmap(BitmapFactory.decodeByteArray(iBytes, 0, iBytes.length),300,300,true);
+                    Bitmap input = Bitmap.createScaledBitmap(BitmapFactory.decodeByteArray(iBytes, 0, iBytes.length), 300, 300, true);
                     //1280X960 image dimensions
                     int wSize = input.getWidth();
                     int hSize = input.getHeight();
-                    int[] intValues = new int[wSize*hSize];
+                    int[] intValues = new int[wSize * hSize];
                     input.getPixels(intValues, 0, input.getWidth(), 0, 0, input.getWidth(), input.getHeight());
-                    Log.d("data", String.valueOf(input.getPixel(20,30 )));
+                    Log.d("data", String.valueOf(input.getPixel(20, 30)));
 
 
                     // for quantised model
                     ByteBuffer imgData;
-                    imgData= ByteBuffer.allocateDirect(wSize*hSize* 3);
+                    imgData = ByteBuffer.allocateDirect(wSize * hSize * 3);
                     //imgData.rewind();
                     for (int i = 0; i < wSize; ++i) {
                         for (int j = 0; j < hSize; ++j) {
-                            int pixelValue = intValues[i * wSize+ j];
+                            int pixelValue = intValues[i * wSize + j];
                             imgData.put((byte) ((pixelValue >> 16) & 0xFF));
                             imgData.put((byte) ((pixelValue >> 8) & 0xFF));
                             imgData.put((byte) (pixelValue & 0xFF));
@@ -257,33 +260,73 @@ public class searchScreen extends AppCompatActivity {
                     // how many detections
                     float[] numDetect = new float[1];
                     float[][] outClasses = new float[1][10];
-                    float[][] outScroes = new float[1][10];
+                    float[][] outScores = new float[1][10];
                     float[][][] loc = new float[1][10][4];
 
-                    output.put(3,numDetect);
+                    output.put(3, numDetect);
                     //classes
-                    output.put(1,outClasses);
+                    output.put(1, outClasses);
                     // scores
-                    output.put(2,outScroes);
+                    output.put(2, outScores);
                     //locations
-                    output.put(0,loc);
+                    output.put(0, loc);
 
+                        Object[] tfliteInput = {imgData};
+                        tflite.runForMultipleInputsOutputs(tfliteInput, output);
+                        // Log.d("ic", output.get(3)));
 
+                        int numDetectionsOutput = Math.min(10, (int) numDetect[0]);
+                        Log.d("found", String.valueOf(numDetectionsOutput));
+                        Log.d("ic", String.valueOf(outClasses[0][0]));
+                        Vector<String> qLessClasses = new Vector();
+                        Vector percents = new Vector();
+                        for (int i = 0; i < outClasses[0].length; i++) {
+                            String cla = Objects[(int) outClasses[0][i]];
+                            if (!cla.equals("???")) {
+                                qLessClasses.add(cla);
+                                percents.add(outScores[0][i]);
+                            }
+                        }
 
+                        int[] top3 = findTop3(percents);
+                        if (top3.length == 3) {
+                            TextView t1, t1p, t2, t2p, t3, t3p;
+                            t1 = (TextView) findViewById(R.id.top1);
+                            t1p = (TextView) findViewById(R.id.top1P);
+                            t2 = (TextView) findViewById(R.id.top2);
+                            t2p = (TextView) findViewById(R.id.top2P);
+                            t3 = (TextView) findViewById(R.id.top3);
+                            t3p = (TextView) findViewById(R.id.top3P);
+                            t1.setText(qLessClasses.get(top3[0]));
+                            t1p.setText(String.valueOf(percents.get(top3[0])));
 
-                    Object[] tfliteInput = {imgData};
-                    tflite.runForMultipleInputsOutputs(tfliteInput,output);
-                    // Log.d("ic", output.get(3)));
+                            t2.setText(qLessClasses.get(top3[1]));
+                            t2p.setText(String.valueOf(percents.get(top3[1])));
 
-                    int numDetectionsOutput = Math.min(10, (int) numDetect[0]);
-                    Log.d("found", String.valueOf(numDetectionsOutput));
-                    Log.d("ic", String.valueOf(outClasses[0][0]));
+                            t3.setText(qLessClasses.get(top3[2]));
+                            t3p.setText(String.valueOf(percents.get(top3[2])));
+                        }
+                   
+                    /*
+                    for (int i = 0; i < 3; i ++)
+                    {
+                        Log.d("top3",qLessClasses.get(i));
+                        Log.d("top3","percent: "+percents.get(i));
+                    }*/
+                    /*
+                    for(int i = 0; i < outClasses[0].length;i++)
+                    {
+                        Log.d("classes",String.valueOf(i)+" :"+Objects[(int) outClasses[0][i]]);
+                    }
+                    Log.d("classes","end");
+                    Log.d("classes","end");
+                    Log.d("classes","end");
+                    */
 
                     tflite.close();
                 } catch (IOException e) {
                     Log.d("FAIL","faileded");
                     Toast.makeText(getApplicationContext(), "no", Toast.LENGTH_LONG);
-
                     e.printStackTrace();
                 }
 
@@ -297,4 +340,64 @@ public class searchScreen extends AppCompatActivity {
         });
         Camera camera = cameraProvider.bindToLifecycle((LifecycleOwner)this, cameraSelector,imageAnalysis,preview);
     }
+
+    private int[] findTop3(Vector array)
+    {
+        float first,second,third;
+        int fpos,spos,tpos;
+
+        first = 0;
+        second = 0;
+        third = 0;
+        fpos = 0;
+        spos = 0;
+        tpos = 0;
+        if(array.isEmpty())
+        {
+            int [] x = {};
+            return x;
+        }
+        for(int i = 0; i < array.size(); i++)
+        {
+            if(i > first)
+            {
+                float temp =first;
+
+                first = (float) array.get(i);
+
+                float temp2 = second;
+                second = temp;
+                third = temp2;
+                int t,t2;
+                t =fpos;
+                t2 = spos;
+                fpos = i;
+
+                spos = t;
+                tpos = t2;
+            }
+            else if(i > second)
+            {
+                float temp = second;
+                second = (float) array.get(i);
+                third = temp;
+                int t;
+                t = spos;
+                spos = i;
+                tpos = t;
+            }
+            else if(i > third)
+            {
+                third = (float) array.get(i);
+                tpos = i;
+            }
+
+        }
+        //float[] x = {fpos,first,spos,second,tpos,third};
+        int[]x = {fpos,spos,tpos};
+        return x;
+    }
+
+
 }
+
