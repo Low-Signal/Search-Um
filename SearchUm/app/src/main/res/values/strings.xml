@@ -7,4 +7,12 @@
         <item>4Name=4</item>
         <item>5Name=5</item>
     </string-array>
+    <string name="title_activity_search_screen">searchScreen</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="hello_world">Hello Square World!</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
