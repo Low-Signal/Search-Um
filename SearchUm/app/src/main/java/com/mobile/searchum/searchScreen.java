@@ -96,7 +96,7 @@ public class searchScreen extends AppCompatActivity {
     private TextView mTextView;
     private static final String M_PATH = "detect.tflite";
     private static final String L_PATH = "labelmap.txt";
-    private static final String F_PATH = "test";
+    private static final String F_PATH = "realStuff.txt";
     private Activity mCurrentActivity = null;
     private String[] Objects = null;
     FirebaseVisionLabelDetectorOptions options =
@@ -322,12 +322,15 @@ public class searchScreen extends AppCompatActivity {
                                                             for (FirebaseVisionLabel label : labels) {
                                                                 String text = label.getLabel();
                                                                 Log.d("Pass", text);
+                                                                Log.d("Pass", "current: "+current);
                                                                 String entityId = label.getEntityId();
                                                                 float confidence = label.getConfidence();
                                                                 Log.d("Pass", String.valueOf(confidence));
-                                                                if(confidence > 0.6) {
-                                                                    TextView c = (TextView) findViewById(R.id.current);
-                                                                    c.setText(text);
+                                                                if(confidence > 0.5 && text.equals(current)) {
+                                                                    chooseObject();
+                                                                    break;
+                                                                   // TextView c = (TextView) findViewById(R.id.current);
+                                                                    //c.setText(text);
                                                                 }
                                                             }
                                                         }
