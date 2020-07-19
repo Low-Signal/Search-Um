@@ -5,3 +5,9 @@ Flesh
 Pillow
 Tableware
 Sink
+Paper
+Food
+Sneakers
+Room
+Space
+Fun
