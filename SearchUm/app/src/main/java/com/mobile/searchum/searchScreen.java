@@ -100,6 +100,8 @@ public class searchScreen extends AppCompatActivity {
     private static final String F_PATH = "realStuff.txt";
     private Activity mCurrentActivity = null;
     private String[] Objects = null;
+    double Score;
+    double Streak;
     FirebaseVisionLabelDetectorOptions options =
             new FirebaseVisionLabelDetectorOptions.Builder()
                     .setConfidenceThreshold(0.8f)
@@ -138,6 +140,7 @@ public class searchScreen extends AppCompatActivity {
     private final View.OnClickListener skipListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
+            Streak = 1.0;
             chooseObject();
         }
 
@@ -147,6 +150,8 @@ public class searchScreen extends AppCompatActivity {
     private void startGame(){
 
         Log.d("game","started");
+        Score = 0;
+        Streak = 1.0;
         chooseObject();
     }
 
@@ -166,6 +171,7 @@ public class searchScreen extends AppCompatActivity {
         }
         else
         {
+            current = "";
             TextView c = (TextView) findViewById(R.id.current);
             c.setText("you found it all");
         }
@@ -325,6 +331,10 @@ public class searchScreen extends AppCompatActivity {
                                                                 float confidence = label.getConfidence();
                                                                 Log.d("Pass", String.valueOf(confidence));
                                                                 if(confidence > 0.5 && text.equals(current)) {
+                                                                    Score += 1 *Streak;
+                                                                    Streak+=0.5;
+                                                                    TextView c = (TextView) findViewById(R.id.Score);
+                                                                    c.setText(String.valueOf(Score));
                                                                     chooseObject();
                                                                     break;
                                                                    // TextView c = (TextView) findViewById(R.id.current);
