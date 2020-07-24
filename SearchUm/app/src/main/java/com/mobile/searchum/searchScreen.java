@@ -1,4 +1,5 @@
 package com.mobile.searchum;
+import android.os.CountDownTimer;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
@@ -75,6 +76,7 @@ import android.app.Activity;
 import android.os.Bundle;
 
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -99,6 +101,7 @@ public class searchScreen extends AppCompatActivity {
     private static final String L_PATH = "labelmap.txt";
     private static final String F_PATH = "realStuff.txt";
     private Activity mCurrentActivity = null;
+    private TextView clock;
     private String[] Objects = null;
     double Score;
     double Streak;
@@ -110,6 +113,8 @@ public class searchScreen extends AppCompatActivity {
     private String current = null;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     int Frame = 0;
+    double mode;
+    int tick;
 
     Button skip;
 
@@ -120,6 +125,32 @@ public class searchScreen extends AppCompatActivity {
         setContentView(R.layout.activity_search_screen2);
 
         mCurrentActivity = this;
+        clock = findViewById(R.id.timer);
+        mode = 0.6;
+        new CountDownTimer(50000,1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                clock.setText(String.valueOf(60-tick)+" seconds remaining");
+                tick++;
+            }
+
+            @Override
+            public void onFinish() {
+                clock.setText("Done");
+            }
+        }.start();
+        ToggleButton babyMode = findViewById((R.id.babyMode));
+        babyMode.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                mode = 0.1;
+                Toast.makeText(getApplicationContext(), "BABY", Toast.LENGTH_LONG);
+
+            }
+
+        });
+
+
 
 
         try {
@@ -274,7 +305,7 @@ public class searchScreen extends AppCompatActivity {
     private void bindPreview(ProcessCameraProvider cameraProvider) {
         Preview preview = new Preview.Builder()
                 .build();
-        Toast.makeText(getApplicationContext(), "abind", Toast.LENGTH_LONG);
+        //Toast.makeText(getApplicationContext(), "abind", Toast.LENGTH_LONG);
 
         CameraSelector cameraSelector = new CameraSelector.Builder()
                 .requireLensFacing(CameraSelector.LENS_FACING_BACK)
@@ -330,12 +361,16 @@ public class searchScreen extends AppCompatActivity {
                                                                 String entityId = label.getEntityId();
                                                                 float confidence = label.getConfidence();
                                                                 Log.d("Pass", String.valueOf(confidence));
-                                                                if(confidence > 0.5 && text.equals(current)) {
+                                                                if(confidence > mode && text.equals(current)) {
                                                                     Score += 1 *Streak;
                                                                     Streak+=0.5;
                                                                     TextView c = (TextView) findViewById(R.id.Score);
                                                                     c.setText(String.valueOf(Score));
+                                                                    TextView b = (TextView) findViewById(R.id.current);
+                                                                    b.setText("Nice Searching!");
+
                                                                     chooseObject();
+
                                                                     break;
                                                                    // TextView c = (TextView) findViewById(R.id.current);
                                                                     //c.setText(text);

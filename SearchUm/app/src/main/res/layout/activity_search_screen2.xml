@@ -35,6 +35,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+
     <Button
         android:id="@+id/skip"
         android:layout_width="wrap_content"
@@ -46,7 +47,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/current" />
-
 
     <TextView
         android:id="@+id/textView3"
@@ -61,31 +61,49 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/score"
         app:layout_constraintTop_toBottomOf="@+id/skip"
-        app:layout_constraintVertical_bias="0.9" />
+        app:layout_constraintVertical_bias="0.8" />
 
     <TextView
         android:id="@+id/Score"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
         android:layout_marginEnd="36dp"
         android:layout_marginBottom="46dp"
         android:ems="10"
         app:layout_constraintBottom_toTopOf="@+id/camera"
         app:layout_constraintEnd_toStartOf="@+id/textView3"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/skip"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintTop_toBottomOf="@+id/timer"
+        app:layout_constraintVertical_bias="0.742" />
 
     <EditText
-        android:id="@+id/editTextTime"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/timer"
+        android:layout_width="176dp"
+        android:layout_height="42dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="52dp"
         android:ems="10"
         android:inputType="time"
-        tools:layout_editor_absoluteX="43dp"
-        tools:layout_editor_absoluteY="173dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/skip" />
+
+    <ToggleButton
+        android:id="@+id/babyMode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="36dp"
+        android:layout_marginBottom="1dp"
+        android:text="ToggleButton"
+        android:textOff="Regular Mode"
+        android:textOn="Baby Mode"
+        app:layout_constraintBottom_toBottomOf="@+id/timer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/timer"
+        app:layout_constraintTop_toBottomOf="@+id/skip"
+        app:layout_constraintVertical_bias="1.0" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
