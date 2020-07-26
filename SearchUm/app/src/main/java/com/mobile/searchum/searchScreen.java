@@ -1,4 +1,5 @@
 package com.mobile.searchum;
+import android.content.Intent;
 import android.os.CountDownTimer;
 import android.app.Activity;
 import android.content.Context;
@@ -82,6 +83,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata;
@@ -94,8 +99,11 @@ import com.google.mlkit.vision.label.ImageLabeler;
 import com.google.mlkit.vision.label.ImageLabeling;
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions;
 
-public class searchScreen extends AppCompatActivity {
 
+public class searchScreen extends AppCompatActivity {
+    private FirebaseAuth mFirebaseAuth;
+    private FirebaseDatabase database;
+    private DatabaseReference mDatabase;
     private TextView mTextView;
     private static final String M_PATH = "detect.tflite";
     private static final String L_PATH = "labelmap.txt";
@@ -123,6 +131,10 @@ public class searchScreen extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_screen2);
+
+        mFirebaseAuth = FirebaseAuth.getInstance();
+        database = FirebaseDatabase.getInstance();
+        mDatabase = database.getReference("HighScores");
 
         mCurrentActivity = this;
         clock = findViewById(R.id.timer);
@@ -188,8 +200,7 @@ public class searchScreen extends AppCompatActivity {
 
 
 
-    private void chooseObject()
-    {
+    private void chooseObject() {
         if(findAble.size() != 0) {
            // Log.d("choice", String.valueOf(findAble.size()));
             Random r = new Random();
@@ -205,6 +216,14 @@ public class searchScreen extends AppCompatActivity {
             current = "";
             TextView c = (TextView) findViewById(R.id.current);
             c.setText("you found it all");
+
+            FirebaseUser user = mFirebaseAuth.getCurrentUser();
+            String username = user.getDisplayName();
+            HashMap<String, Integer> scoreMap = new HashMap<>();
+            scoreMap.put(username, (int)(Score*100));
+            mDatabase.push().setValue(scoreMap);
+            //Thread.sleep(10000);
+            startActivity(new Intent(searchScreen.this, HomeScreen.class));
         }
     }
 
@@ -365,7 +384,7 @@ public class searchScreen extends AppCompatActivity {
                                                                     Score += 1 *Streak;
                                                                     Streak+=0.5;
                                                                     TextView c = (TextView) findViewById(R.id.Score);
-                                                                    c.setText(String.valueOf(Score));
+                                                                    c.setText(String.valueOf(Score*100));
                                                                     TextView b = (TextView) findViewById(R.id.current);
                                                                     b.setText("Nice Searching!");
 

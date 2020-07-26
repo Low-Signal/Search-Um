@@ -21,8 +21,9 @@ public class HomeScreen extends AppCompatActivity {
     // Goes to the game activity.
     private final View.OnClickListener playListener = new View.OnClickListener() {
         @Override
-        public void onClick(View view) {
-            startActivity(new Intent(HomeScreen.this, Game.class));
+        //public void onClick(View view) {
+            //startActivity(new Intent(HomeScreen.this, Game.class));
+        public void onClick(View view) { startActivity(new Intent(HomeScreen.this, searchScreen.class));
         }
     };
 
