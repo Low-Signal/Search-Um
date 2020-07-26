@@ -45,6 +45,7 @@ import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -216,13 +217,13 @@ public class searchScreen extends AppCompatActivity {
             current = "";
             TextView c = (TextView) findViewById(R.id.current);
             c.setText("you found it all");
-
+            Toast.makeText(getApplicationContext(), "You Found Um All", Toast.LENGTH_LONG);
             FirebaseUser user = mFirebaseAuth.getCurrentUser();
             String username = user.getDisplayName();
             HashMap<String, Integer> scoreMap = new HashMap<>();
             scoreMap.put(username, (int)(Score*100));
             mDatabase.push().setValue(scoreMap);
-            //Thread.sleep(10000);
+
             startActivity(new Intent(searchScreen.this, HomeScreen.class));
         }
     }
