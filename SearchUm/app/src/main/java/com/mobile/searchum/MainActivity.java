@@ -2,8 +2,12 @@ package com.mobile.searchum;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.View;
@@ -80,6 +84,33 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if(ContextCompat.checkSelfPermission(this,
+                Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat
+                    .requestPermissions(
+                            MainActivity.this,
+                            new String[] { Manifest.permission.CAMERA},
+                            100);
+        }
+
+        if(ContextCompat.checkSelfPermission(this,
+                Manifest.permission.INTERNET)
+                != PackageManager.PERMISSION_GRANTED)
+        {
+            ActivityCompat
+                    .requestPermissions(
+                            MainActivity.this,
+                            new String[] { Manifest.permission.INTERNET},
+                            101);
+        }
+
+
+
+
+
+
 
         mFirebaseAuth = FirebaseAuth.getInstance();
         emailEditText = findViewById(R.id.emailEditText);
