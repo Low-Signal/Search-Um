@@ -14,7 +14,6 @@ import com.google.firebase.auth.FirebaseUser;
 
 public class HomeScreen extends AppCompatActivity {
     private Button playButton, highScoreButton, changePassButton, logoutButton;
-    private TextView testTextView;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
@@ -58,7 +57,6 @@ public class HomeScreen extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_screen);
 
-        testTextView = findViewById(R.id.testTextView);
         playButton = findViewById(R.id.playButton);
         highScoreButton = findViewById(R.id.highScoreButton);
         changePassButton = findViewById(R.id.changePassButton);
@@ -72,6 +70,5 @@ public class HomeScreen extends AppCompatActivity {
         mFirebaseAuth = FirebaseAuth.getInstance();
         FirebaseUser user = mFirebaseAuth.getCurrentUser();
         String displayName = user.getDisplayName();
-        testTextView.setText(displayName);
     }
 }
